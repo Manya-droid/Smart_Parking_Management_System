@@ -4,18 +4,28 @@ import mongoose from 'mongoose';
 import { Slot } from './models/Slot.js';
 import { Rate } from './models/Rate.js';
 
-const slotsData = [
-  { slotNumber: 'A-1', zone: 'A', type: 'car', distanceFromEntry: 10 },
-  { slotNumber: 'A-2', zone: 'A', type: 'car', distanceFromEntry: 15 },
-  { slotNumber: 'A-3', zone: 'A', type: 'car', distanceFromEntry: 20 },
-  { slotNumber: 'A-4', zone: 'A', type: 'bike', distanceFromEntry: 12 },
-  { slotNumber: 'A-5', zone: 'A', type: 'bike', distanceFromEntry: 18 },
-  { slotNumber: 'B-1', zone: 'B', type: 'car', distanceFromEntry: 40 },
-  { slotNumber: 'B-2', zone: 'B', type: 'car', distanceFromEntry: 45 },
-  { slotNumber: 'B-3', zone: 'B', type: 'ev', distanceFromEntry: 35 },
-  { slotNumber: 'B-4', zone: 'B', type: 'disabled', distanceFromEntry: 5 },
-  { slotNumber: 'C-1', zone: 'C', type: 'car', distanceFromEntry: 60 },
-];
+const ZONES = ['A', 'B', 'C', 'D', 'E'];
+const SLOTS_PER_ZONE = 100;
+
+// har 100 slots me: 60 car, 25 bike, 10 ev, 5 disabled
+function typeFor(i) {
+  if (i <= 60) return 'car';
+  if (i <= 85) return 'bike';
+  if (i <= 95) return 'ev';
+  return 'disabled';
+}
+
+const slotsData = ZONES.flatMap((zone, zIdx) =>
+  Array.from({ length: SLOTS_PER_ZONE }, (_, k) => {
+    const i = k + 1;
+    return {
+      slotNumber: `${zone}-${i}`,
+      zone,
+      type: typeFor(i),
+      distanceFromEntry: zIdx * 50 + Math.ceil(i / 4) * 3, // door zone se door, entry se zyada distance
+    };
+  })
+);
 
 const ratesData = [
   { vehicleType: 'car', firstHourRate: 20, additionalHourRate: 10 },

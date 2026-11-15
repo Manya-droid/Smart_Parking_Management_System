@@ -26,5 +26,5 @@ export async function findVehicleOwnerByNumber(vehicleNumber) {
   return User.findOne({
     vehicleNumber: vehicleNumber.toUpperCase(),
     role: 'vehicleOwner',
-  });
+  }).select('-passwordHash');
 }

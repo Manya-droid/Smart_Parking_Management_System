@@ -1,6 +1,13 @@
 // controllers/sessionController.js
-import { checkInWalkIn, initiateCheckout, confirmPayment,checkOut } from '../services/sessionService.js';
-import { broadcastSlotChange } from '../socket.js';
+import {
+  checkInWalkIn,
+  initiateCheckout,
+  confirmPayment,
+  getActiveSessions,
+  getSessionHistory,
+  checkOut,
+} from "../services/sessionService.js";
+import { broadcastSlotChange } from "../socket.js";
 // purana handleCheckOut hata ke ye 2 naye:
 export async function handleInitiateCheckout(req, res) {
   try {
@@ -25,15 +32,39 @@ export async function handleConfirmPayment(req, res) {
 
 export async function handleCheckIn(req, res) {
   try {
-    const { name, phoneNumber, vehicleNumber, vehicleType } = req.body;
-    const result = await checkInWalkIn({ name, phoneNumber, vehicleNumber, vehicleType });
+    const { name, phoneNumber, vehicleNumber, vehicleType, preferredZone } =
+      req.body;
+    const result = await checkInWalkIn({
+      name,
+      phoneNumber,
+      vehicleNumber,
+      vehicleType,
+      preferredZone:
+        typeof preferredZone === "string" && preferredZone
+          ? preferredZone
+          : null,
+    });
     await broadcastSlotChange(result.slot);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 }
+export async function handleActiveSessions(req, res) {
+  try {
+    res.json(await getActiveSessions());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
 
+export async function handleSessionHistory(req, res) {
+  try {
+    res.json(await getSessionHistory());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
 // export async function handleCheckOut(req, res) {
 //   try {
 //     const { vehicleNumber } = req.body;
@@ -41,5 +72,6 @@ export async function handleCheckIn(req, res) {
 //     res.status(200).json(result);
 //   } catch (err) {
 //     res.status(400).json({ error: err.message });
+
 //   }
 // }

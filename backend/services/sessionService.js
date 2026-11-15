@@ -126,7 +126,7 @@ export async function confirmPayment({ vehicleNumber, paymentMethod }) {
   return { session, slot };
 }
 // ---- Walk-in check-in: vehicle number se auto owner-lookup + auto slot assign ----
-export async function checkInWalkIn({ name, phoneNumber, vehicleNumber, vehicleType }) {
+export async function checkInWalkIn({ name, phoneNumber, vehicleNumber, vehicleType, preferredZone = null })  {
   const upperVehicleNumber = vehicleNumber.toUpperCase();
 
   // Step 1: Owner dhundo, nahi mila to naya banao
@@ -150,22 +150,54 @@ export async function checkInWalkIn({ name, phoneNumber, vehicleNumber, vehicleT
     throw new Error('This vehicle is already checked in');
   }
 
-  // Step 3: Is vehicle type ke saare free slots nikalo, recommendation se best chuno
-  const freeSlots = await Slot.find({ occupancy: 'FREE', type: vehicleType });
-  if (freeSlots.length === 0) {
-    throw new Error('No free slots available for this vehicle type right now');
-  }
-  const ranked = recommend(freeSlots, { vehicleType });
-  const bestSlot = ranked[0].slot;
+    // Step 3: Does this owner hold a live booking?
+  let claimedSlot = null;
+  const booked = await Slot.findOne({
+    'reservation.status': 'RESERVED',
+    'reservation.reservedBy': owner._id,
+    'reservation.reservedUntil': { $gte: new Date() },
+  });
 
-  // Step 4: Atomic claim (race condition safe)
-  const claimedSlot = await Slot.findOneAndUpdate(
-    { _id: bestSlot._id, occupancy: 'FREE' },
-    { occupancy: 'OCCUPIED' },
-    { new: true }
-  );
-  if (!claimedSlot) {
-    throw new Error('Slot was just taken, please try again');
+  if (booked) {
+    // Use the booked slot and clear the booking in the same atomic update
+    claimedSlot = await Slot.findOneAndUpdate(
+      { _id: booked._id, occupancy: 'FREE', 'reservation.reservedBy': owner._id },
+      {
+        $set: {
+          occupancy: 'OCCUPIED',
+          'reservation.status': 'NONE',
+          'reservation.reservedFrom': null,
+          'reservation.reservedUntil': null,
+          'reservation.reservedBy': null,
+        },
+      },
+      { new: true }
+    );
+    if (!claimedSlot) {
+      throw new Error('Your booked slot is no longer available, please try again');
+    }
+  } else {
+    // No booking: pick the best slot, but never a reserved one
+    const freeSlots = await Slot.find({
+      occupancy: 'FREE',
+      type: vehicleType,
+      'reservation.status': { $ne: 'RESERVED' },
+    });
+    if (freeSlots.length === 0) {
+      throw new Error('No free slots available for this vehicle type right now');
+    }
+    const ranked = recommend(freeSlots, { vehicleType, preferredZone });
+    const bestSlot = ranked[0].slot;
+
+    // Step 4: Atomic claim (race condition safe)
+    claimedSlot = await Slot.findOneAndUpdate(
+      { _id: bestSlot._id, occupancy: 'FREE', 'reservation.status': { $ne: 'RESERVED' } },
+      { occupancy: 'OCCUPIED' },
+      { new: true }
+    );
+    if (!claimedSlot) {
+      throw new Error('Slot was just taken, please try again');
+    }
   }
 
   // Step 5: Session banao — yahi checkInTime save hota hai
@@ -181,5 +213,17 @@ export async function checkInWalkIn({ name, phoneNumber, vehicleNumber, vehicleT
   claimedSlot.currentSession = session._id;
   await claimedSlot.save();
 
-  return { owner, session, slot: claimedSlot };
+  return {
+  owner: { _id: owner._id, name: owner.name, vehicleNumber: owner.vehicleNumber, vehicleType: owner.vehicleType },
+  session,
+  slot: claimedSlot,
+  };
+}
+// ---- Dashboard data (admin) ----
+export async function getActiveSessions() {
+  return Session.find({ status: 'ACTIVE' }).sort({ checkInTime: -1 });
+}
+
+export async function getSessionHistory(limit = 50) {
+  return Session.find({ status: 'COMPLETED' }).sort({ checkOutTime: -1 }).limit(limit);
 }

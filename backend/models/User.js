@@ -1,5 +1,5 @@
 // models/User.js
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -10,11 +10,11 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'vehicleOwner'],
+      enum: ["admin", "staff", "vehicleOwner"],
       required: true,
     },
 
-    // ---- Admin-only fields ----
+   // ---- Login fields (admin, staff, and vehicleOwner who signs up with email) ----
     email: {
       type: String,
       lowercase: true,
@@ -32,31 +32,33 @@ const userSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
       sparse: true,
-      unique: true, // ek vehicle number sirf ek vehicleOwner ke naam
+      unique: true, // one vehicle number  per vehicleOwner name
     },
     vehicleType: {
       type: String,
-      enum: ['car', 'bike', 'ev', 'disabled'],
+      enum: ["car", "bike", "ev", "disabled"],
     },
     phoneNumber: {
       type: String,
       trim: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-userSchema.pre('validate', function () {
-  if (this.role === 'admin') {
+userSchema.pre("validate", function () {
+  if (this.role === "admin" || this.role === "staff") {
     if (!this.email || !this.passwordHash) {
-      throw new Error('Admin must have email and passwordHash');
+      throw new Error("Admin and staff must have email and passwordHash");
     }
   }
-  if (this.role === 'vehicleOwner') {
+  if (this.role === "vehicleOwner") {
     if (!this.vehicleNumber || !this.vehicleType || !this.phoneNumber) {
-      throw new Error('vehicleOwner must have vehicleNumber, vehicleType, and phoneNumber');
+      throw new Error(
+        "vehicleOwner must have vehicleNumber, vehicleType, and phoneNumber",
+      );
     }
   }
 });
 
-export const User = mongoose.model('User', userSchema);
+export const User = mongoose.model("User", userSchema);

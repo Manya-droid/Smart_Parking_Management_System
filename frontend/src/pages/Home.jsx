@@ -80,6 +80,10 @@ export default function Home() {
         <a onClick={() => navigate('/admin/login')} style={{ cursor: 'pointer' }}>
           Login as Admin
         </a>
+        <br />
+        <a onClick={() => navigate('/owner/login')} style={{ cursor: 'pointer' }}>Vehicle owner login</a>
+        {' · '}
+        <a onClick={() => navigate('/owner/signup')} style={{ cursor: 'pointer' }}>Sign up</a>
       </div>
     </div>
   );

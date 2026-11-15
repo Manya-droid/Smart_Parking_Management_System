@@ -1,6 +1,7 @@
 // src/components/CheckInForm.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import RecommendationPanel from './RecommendationPanel';
 import {
   validateName,
   validatePhone,
@@ -8,7 +9,7 @@ import {
   validateVehicleType,
 } from '../utils/validators';
 
-export default function CheckInForm() {
+export default function CheckInForm({ preferredZone = '', onZoneChange = () => {}, onVehicleChange = () => {} })  {
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [vehicleNumberError, setVehicleNumberError] = useState('');
   const [checking, setChecking] = useState(false);
@@ -20,6 +21,7 @@ export default function CheckInForm() {
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+ 
 
   async function handleCheckVehicle() {
     const err = validateVehicleNumber(vehicleNumber);
@@ -74,7 +76,7 @@ export default function CheckInForm() {
             vehicleNumber: vehicleNumber.toUpperCase(),
             vehicleType: newDetails.vehicleType,
           };
-
+      if (preferredZone) payload.preferredZone = preferredZone;
       if (!existingOwner) {
         const newErrors = {
           name: validateName(newDetails.name),
@@ -97,13 +99,21 @@ export default function CheckInForm() {
       setExistingOwner(null);
       setNewDetails({ name: '', phoneNumber: '', vehicleType: '' });
       setErrors({});
+      onZoneChange('');
     } catch (err) {
       setSubmitError(err.response?.data?.error || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
   }
+    // what the recommendation panel needs
+    // tell the page which vehicle is being checked in, so the right-hand panel can score slots
+  const vehicleType = existingOwner?.vehicleType || newDetails.vehicleType;
+  const plate = lookupDone ? vehicleNumber.trim().toUpperCase().replace(/\s/g, '') : '';
 
+  useEffect(() => {
+    onVehicleChange({ vehicleType, vehicleNumber: plate });
+  }, [vehicleType, plate, onVehicleChange]);
   function handleReset() {
     setVehicleNumber('');
     setLookupDone(false);
@@ -111,6 +121,7 @@ export default function CheckInForm() {
     setNewDetails({ name: '', phoneNumber: '', vehicleType: '' });
     setErrors({});
     setSubmitError('');
+    onZoneChange('');
   }
 
   return (
@@ -149,6 +160,7 @@ export default function CheckInForm() {
             <label className="form-label">Vehicle Type</label>
             <input className="form-input" value={existingOwner.vehicleType} disabled />
           </div>
+          
           <button className="btn-primary" onClick={handleConfirmCheckIn} disabled={loading}>
             {loading ? 'Checking in...' : 'Check In'}
           </button>
@@ -205,7 +217,7 @@ export default function CheckInForm() {
             </select>
             {errors.vehicleType && <div className="error-text">{errors.vehicleType}</div>}
           </div>
-
+          
           <button className="btn-primary" onClick={handleConfirmCheckIn} disabled={loading}>
             {loading ? 'Registering & checking in...' : 'Register & Check In'}
           </button>

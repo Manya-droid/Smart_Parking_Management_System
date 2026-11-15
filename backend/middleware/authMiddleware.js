@@ -1,20 +1,26 @@
-// middleware/authMiddleware.js
 import jwt from 'jsonwebtoken';
 
-export function requireAdmin(req, res, next) {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = decoded; // { id, role }
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
+function authorize(allowedRoles) {
+  return (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    try {
+      const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      if (!allowedRoles.includes(decoded.role)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      req.admin = decoded; // purane code ke liye same naam
+      next();
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+  };
 }
+
+export const requireAdmin = authorize(['admin']);
+export const requireAdminOrOwner = authorize(['admin', 'vehicleOwner']);
+export const requireOwner = authorize(['vehicleOwner']);
+export const requireStaffOrAdmin = authorize(['admin', 'staff']);
+export const requireAnyLogin = authorize(['admin', 'staff', 'vehicleOwner']);

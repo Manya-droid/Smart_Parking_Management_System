@@ -31,7 +31,7 @@ export default function AdminLogin() {
         password: form.password,
       });
       saveAuth(res.data.token, res.data.admin);
-      navigate('/admin/dashboard');
+      navigate(res.data.admin.role === 'staff' ? '/checkin' : '/admin/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     } finally {

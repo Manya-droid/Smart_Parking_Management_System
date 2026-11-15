@@ -34,6 +34,7 @@ const slotSchema = new mongoose.Schema(
       },
       reservedFrom: { type: Date },
       reservedUntil: { type: Date },
+      reservedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     },
     currentSession: {
       type: mongoose.Schema.Types.ObjectId,

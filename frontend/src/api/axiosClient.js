@@ -1,6 +1,6 @@
 // src/api/axiosClient.js
 import axios from 'axios';
-import { getToken } from '../utils/authStorage';
+import { getToken, getOwnerToken } from '../utils/authStorage';
 
 const axiosClient = axios.create({
   baseURL: 'http://localhost:5000/api',
@@ -8,7 +8,9 @@ const axiosClient = axios.create({
 });
 
 axiosClient.interceptors.request.use((config) => {
-  const token = getToken();
+  // owner pages use the owner token; everything else uses the staff/admin token
+  const onOwnerPage = window.location.pathname.startsWith('/owner');
+  const token = onOwnerPage ? getOwnerToken() : getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

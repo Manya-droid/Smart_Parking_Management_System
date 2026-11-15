@@ -1,5 +1,5 @@
 // controllers/authController.js
-import { registerAdmin, loginAdmin } from '../services/authService.js';
+import { registerAdmin, loginAdmin, registerStaff, registerOwner, loginOwner } from '../services/authService.js';
 export async function handleAdminRegister(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -17,5 +17,32 @@ export async function handleAdminLogin(req, res) {
     res.status(200).json(result);
   } catch (err) {
     res.status(401).json({ error: err.message });
+  }
+}
+
+export async function handleOwnerRegister(req, res) {
+  try {
+    const { name, email, password, phoneNumber, vehicleNumber, vehicleType } = req.body;
+    const owner = await registerOwner({ name, email, password, phoneNumber, vehicleNumber, vehicleType });
+    res.status(201).json(owner);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+export async function handleOwnerLogin(req, res) {
+  try {
+    const { email, password } = req.body;
+    res.status(200).json(await loginOwner({ email, password }));
+  } catch (err) {
+    res.status(401).json({ error: err.message });
+  }
+}
+export async function handleStaffRegister(req, res) {
+  try {
+    const { name, email, password } = req.body;
+    res.status(201).json(await registerStaff({ name, email, password }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 }

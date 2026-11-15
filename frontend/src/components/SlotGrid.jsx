@@ -29,11 +29,11 @@ export default function SlotGrid({ slots }) {
           </span>
         ))}
       </div>
-
+      <div style={{ paddingRight: 8 }}>
       {Object.keys(byZone).sort().map((zone) => (
         <div key={zone} style={{ marginBottom: 18 }}>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>Zone {zone}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {byZone[zone]
               .sort((a, b) => a.slotNumber.localeCompare(b.slotNumber, undefined, { numeric: true }))
               .map((slot) => {
@@ -44,19 +44,18 @@ export default function SlotGrid({ slots }) {
                     key={slot._id}
                     title={`${slot.slotNumber} · ${slot.type} · ${state}`}
                     style={{
-                      width: 72, padding: '10px 0', textAlign: 'center',
+                      width: 56, padding: '5px 0', textAlign: 'center', fontSize: 12,
                       background: s.bg, border: `1.5px solid ${s.border}`,
-                      color: s.text, borderRadius: 8, transition: 'all 0.3s',
+                      color: s.text, borderRadius: 6, transition: 'all 0.3s',
                     }}
                   >
                     <div style={{ fontWeight: 700 }}>{slot.slotNumber}</div>
-                    <div style={{ fontSize: 11 }}>{slot.type}</div>
                   </div>
                 );
               })}
           </div>
         </div>
-      ))}
+      ))} </div>
     </div>
   );
 }
