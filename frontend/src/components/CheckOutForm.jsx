@@ -1,19 +1,21 @@
 // src/components/CheckOutForm.jsx
-import { useState } from 'react';
-import axiosClient from '../api/axiosClient';
-import { validateVehicleNumber } from '../utils/validators';
+import { useState } from "react";
+import axiosClient from "../api/axiosClient";
+import { validateVehicleNumber } from "../utils/validators";
+import Receipt from "./Receipt";
 
 export default function CheckOutForm() {
-  const [vehicleNumber, setVehicleNumber] = useState('');
-  const [error, setError] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingSession, setPendingSession] = useState(null); // fare calculate hone ke baad
-  const [doneMessage, setDoneMessage] = useState('');
+  const [doneMessage, setDoneMessage] = useState("");
+  const [receipt, setReceipt] = useState(null);
 
   async function handleCalculateFare(e) {
     e.preventDefault();
-    setError('');
-    setDoneMessage('');
+    setError("");
+    setDoneMessage("");
 
     const validationError = validateVehicleNumber(vehicleNumber);
     if (validationError) {
@@ -23,12 +25,12 @@ export default function CheckOutForm() {
 
     setLoading(true);
     try {
-      const res = await axiosClient.post('/sessions/initiate-checkout', {
+      const res = await axiosClient.post("/sessions/initiate-checkout", {
         vehicleNumber: vehicleNumber.toUpperCase(),
       });
       setPendingSession(res.data.session);
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong.');
+      setError(err.response?.data?.error || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -36,19 +38,20 @@ export default function CheckOutForm() {
 
   async function handleConfirmPayment(paymentMethod) {
     setLoading(true);
-    setError('');
+    setError("");
     try {
-      const res = await axiosClient.post('/sessions/confirm-payment', {
+      const res = await axiosClient.post("/sessions/confirm-payment", {
         vehicleNumber: vehicleNumber.toUpperCase(),
         paymentMethod,
       });
       setDoneMessage(
-        `Checked out! Slot ${res.data.slot.slotNumber} freed. Paid via ${paymentMethod.toUpperCase()}.`
+        `Checked out! Slot ${res.data.slot.slotNumber} freed. Paid via ${paymentMethod.toUpperCase()}.`,
       );
+      setReceipt(res.data.session);
       setPendingSession(null);
-      setVehicleNumber('');
+      setVehicleNumber("");
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong.');
+      setError(err.response?.data?.error || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -57,7 +60,20 @@ export default function CheckOutForm() {
   return (
     <div>
       {doneMessage && <div className="success-banner">{doneMessage}</div>}
-      {error && <div className="error-text" style={{ marginBottom: 16 }}>{error}</div>}
+      {error && (
+        <div className="error-text" style={{ marginBottom: 16 }}>
+          {error}
+        </div>
+      )}
+      {receipt && (
+        <Receipt
+          session={receipt}
+          onDone={() => {
+            setReceipt(null);
+            setDoneMessage("");
+          }}
+        />
+      )}
 
       {!pendingSession ? (
         <form onSubmit={handleCalculateFare} noValidate>
@@ -72,26 +88,30 @@ export default function CheckOutForm() {
             />
           </div>
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? 'Calculating...' : 'Calculate Fare'}
+            {loading ? "Calculating..." : "Calculate Fare"}
           </button>
         </form>
       ) : (
         <div>
           <div className="form-group">
-            <p>Duration: <strong>{pendingSession.durationMinutes} min</strong></p>
-            <p>Fare Due: <strong>₹{pendingSession.fare}</strong></p>
+            <p>
+              Duration: <strong>{pendingSession.durationMinutes} min</strong>
+            </p>
+            <p>
+              Fare Due: <strong>₹{pendingSession.fare}</strong>
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: "flex", gap: "10px" }}>
             <button
               className="btn-primary"
-              onClick={() => handleConfirmPayment('cash')}
+              onClick={() => handleConfirmPayment("cash")}
               disabled={loading}
             >
               Cash Paid
             </button>
             <button
               className="btn-primary"
-              onClick={() => handleConfirmPayment('qr')}
+              onClick={() => handleConfirmPayment("qr")}
               disabled={loading}
             >
               QR Paid
@@ -102,31 +122,6 @@ export default function CheckOutForm() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // // src/components/CheckOutForm.jsx
 // import { useState } from 'react';

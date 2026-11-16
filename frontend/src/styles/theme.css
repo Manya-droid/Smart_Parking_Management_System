@@ -356,3 +356,27 @@ body {
   background: #fffbeb;
   color: #92400e;
 }
+/* ---- Receipt popup ---- */
+.receipt-modal { width: min(380px, 92vw); max-height: none; overflow: visible; padding: 18px; }
+.receipt-ok { font-size: 13px; font-weight: 600; color: #059669; text-align: center; margin-bottom: 10px; }
+.receipt { border: 1px dashed var(--color-border); border-radius: var(--radius); padding: 14px 16px; }
+.receipt-title { text-align: center; color: var(--color-primary-dark); font-size: 20px; margin: 0; }
+.receipt-sub { text-align: center; color: var(--color-text-muted); font-size: 12px; margin: 2px 0 8px; }
+.receipt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.receipt-table td { padding: 4px 0; border-bottom: 1px solid var(--color-border); }
+.receipt-table td:last-child { text-align: right; font-weight: 600; }
+.receipt-total td { font-size: 16px; border-bottom: none; }
+
+/* very short windows: tighten further so it still fits without scrolling */
+@media (max-height: 640px) {
+  .receipt-modal { padding: 12px; }
+  .receipt { padding: 10px 12px; }
+  .receipt-table td { padding: 2px 0; }
+}
+
+/* print only the receipt (not the buttons or the popup background) */
+@media print {
+  body * { visibility: hidden; }
+  .receipt, .receipt * { visibility: visible; }
+  .receipt { position: fixed; left: 0; top: 0; width: 100%; border: none; padding: 24px; }
+}

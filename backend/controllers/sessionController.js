@@ -6,6 +6,8 @@ import {
   getActiveSessions,
   getSessionHistory,
   checkOut,
+  getMyCurrentSession,
+  getMyHistory,
 } from "../services/sessionService.js";
 import { broadcastSlotChange } from "../socket.js";
 // purana handleCheckOut hata ke ye 2 naye:
@@ -61,6 +63,21 @@ export async function handleActiveSessions(req, res) {
 export async function handleSessionHistory(req, res) {
   try {
     res.json(await getSessionHistory());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+export async function handleMyCurrentSession(req, res) {
+  try {
+    res.json(await getMyCurrentSession(req.admin.id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function handleMyHistory(req, res) {
+  try {
+    res.json(await getMyHistory(req.admin.id));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

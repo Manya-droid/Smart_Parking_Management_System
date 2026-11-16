@@ -227,3 +227,34 @@ export async function getActiveSessions() {
 export async function getSessionHistory(limit = 50) {
   return Session.find({ status: 'COMPLETED' }).sort({ checkOutTime: -1 }).limit(limit);
 }
+// ---- Owner view: my current session (fare so far is calculated, not saved) ----
+export async function getMyCurrentSession(ownerId) {
+  const owner = await User.findOne({ _id: ownerId, role: 'vehicleOwner' });
+  if (!owner) throw new Error('Owner account not found');
+
+  const session = await Session.findOne({ vehicleNumber: owner.vehicleNumber, status: 'ACTIVE' });
+  if (!session) return null;
+
+  const durationMinutes = calculateDurationMinutes(session.checkInTime, new Date());
+  const rate = await Rate.findOne({ vehicleType: session.vehicleType });
+
+  return {
+    slotNumber: session.slotNumber,
+    vehicleNumber: session.vehicleNumber,
+    vehicleType: session.vehicleType,
+    checkInTime: session.checkInTime,
+    durationMinutes,
+    fareSoFar: rate ? calculateFare(durationMinutes, rate) : null,
+  };
+}
+
+// ---- Owner view: my past visits ----
+export async function getMyHistory(ownerId, limit = 20) {
+  const owner = await User.findOne({ _id: ownerId, role: 'vehicleOwner' });
+  if (!owner) throw new Error('Owner account not found');
+
+  return Session.find({ vehicleNumber: owner.vehicleNumber, status: 'COMPLETED' })
+    .sort({ checkOutTime: -1 })
+    .limit(limit)
+    .select('slotNumber checkInTime checkOutTime durationMinutes fare paymentMethod');
+}

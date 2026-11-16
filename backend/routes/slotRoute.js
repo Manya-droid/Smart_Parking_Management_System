@@ -1,6 +1,6 @@
 import express from 'express';
 import { Slot } from '../models/Slot.js';
-import { requireAdmin, requireStaffOrAdmin, requireAnyLogin } from '../middleware/authMiddleware.js';
+import { requireAdmin, requireStaffOrAdmin, requireAnyLogin, requireOwner} from '../middleware/authMiddleware.js';
 import { toPublicSlot } from '../utils/publicSlot.js';
 import { User } from '../models/User.js';
 import { recommend } from '../services/recommendationService.js';
@@ -58,6 +58,37 @@ router.get('/recommend', requireStaffOrAdmin, async (req, res) => {
 
     res.json({
       booked: null,
+      best: ranked[0] ? shape(ranked[0]) : null,
+      alternatives: ranked.slice(1, 4).map(shape),
+      zones: zones.sort(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+// Recommendation for the logged-in vehicle owner (uses the owner's own vehicle type)
+router.get('/my-recommendation', requireOwner, async (req, res) => {
+  try {
+    const owner = await User.findOne({ _id: req.admin.id, role: 'vehicleOwner' });
+    if (!owner) return res.status(404).json({ error: 'Owner account not found' });
+
+    const { preferredZone } = req.query;
+    const [freeSlots, zones] = await Promise.all([
+      Slot.find({
+        occupancy: 'FREE',
+        type: owner.vehicleType,
+        'reservation.status': { $ne: 'RESERVED' },
+      }),
+      Slot.distinct('zone', { type: owner.vehicleType }),
+    ]);
+
+    const ranked = recommend(freeSlots, {
+      vehicleType: owner.vehicleType,
+      preferredZone: preferredZone || null,
+    });
+    const shape = (r) => ({ slot: toPublicSlot(r.slot), score: r.score, reasons: r.reasons });
+
+    res.json({
       best: ranked[0] ? shape(ranked[0]) : null,
       alternatives: ranked.slice(1, 4).map(shape),
       zones: zones.sort(),

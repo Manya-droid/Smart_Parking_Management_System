@@ -5,6 +5,8 @@ import { socket } from "../api/socket";
 import SlotGrid from "../components/SlotGrid";
 import useLiveSlots from "../hooks/useLiveSlots";
 import { clearOwnerAuth, getOwner } from "../utils/authStorage";
+import OwnerRecommendation from "../components/OwnerRecommendation";
+import MyParking from "../components/MyParking";
 
 // Small component so the 1-second tick doesn't re-render the whole dashboard
 function Countdown({ until }) {
@@ -29,6 +31,7 @@ export default function OwnerHome() {
     const [myBooking, setMyBooking] = useState(null);
     const [bookError, setBookError] = useState("");
     const [busy, setBusy] = useState(false);
+    const [tab, setTab] = useState("book"); // 'book' or 'parking'
 
     // Load my booking now, and again on every live slot change
     useEffect(() => {
@@ -171,135 +174,175 @@ export default function OwnerHome() {
                         </div>
                     </section>
 
-                    {/* RIGHT: 10 nearest to entry, with Book buttons */}
+                    {/* RIGHT: tabs */}
                     <section className="owner-panel">
-                        <h3 className="owner-panel-title">
-                            10 nearest to entry
-                        </h3>
-                        <div className="owner-panel-body">
-                            <table
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 8,
+                                marginBottom: 10,
+                            }}
+                        >
+                            <button
+                                className="btn-primary"
                                 style={{
-                                    width: "100%",
-                                    borderCollapse: "collapse",
-                                    fontSize: 14,
+                                    width: "auto",
+                                    padding: "5px 14px",
+                                    fontSize: 13,
+                                    opacity: tab === "book" ? 1 : 0.5,
                                 }}
+                                onClick={() => setTab("book")}
                             >
-                                <thead>
-                                    <tr>
-                                        <th
-                                            style={{
-                                                padding: 6,
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            #
-                                        </th>
-                                        <th
-                                            style={{
-                                                padding: 6,
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            Slot
-                                        </th>
-                                        <th
-                                            style={{
-                                                padding: 6,
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            Zone
-                                        </th>
-                                        <th
-                                            style={{
-                                                padding: 6,
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            Type
-                                        </th>
-                                        <th
-                                            style={{
-                                                padding: 6,
-                                                textAlign: "left",
-                                            }}
-                                        >
-                                            Distance
-                                        </th>
-                                        <th style={{ padding: 6 }}></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {freeSlots.length === 0 && (
-                                        <tr>
-                                            <td
-                                                colSpan="6"
-                                                style={{ padding: 8 }}
-                                            >
-                                                No free slots for your vehicle
-                                                type right now.
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {freeSlots.map((s, i) => (
-                                        <tr
-                                            key={s._id}
-                                            style={{
-                                                borderTop: "1px solid #e5e7eb",
-                                            }}
-                                        >
-                                            <td style={{ padding: 6 }}>
-                                                {i + 1}
-                                            </td>
-                                            <td style={{ padding: 6 }}>
-                                                <strong>{s.slotNumber}</strong>
-                                            </td>
-                                            <td style={{ padding: 6 }}>
-                                                {s.zone}
-                                            </td>
-                                            <td style={{ padding: 6 }}>
-                                                {s.type}
-                                            </td>
-                                            <td style={{ padding: 6 }}>
-                                                {s.distanceFromEntry} m
-                                            </td>
-                                            <td
-                                                style={{
-                                                    padding: 6,
-                                                    textAlign: "right",
-                                                }}
-                                            >
-                                                {s.type ===
-                                                owner?.vehicleType ? (
-                                                    <button
-                                                        className="book-btn"
-                                                        disabled={
-                                                            busy || !!myBooking
-                                                        }
-                                                        onClick={() =>
-                                                            handleBook(s._id)
-                                                        }
-                                                        title={
-                                                            myBooking
-                                                                ? "You already have a booking"
-                                                                : "Book this slot"
-                                                        }
-                                                    >
-                                                        Book
-                                                    </button>
-                                                ) : (
-                                                    <span
-                                                        title={`Not suitable for a ${owner?.vehicleType}`}
-                                                    >
-                                                        —
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                Book a slot
+                            </button>
+                            <button
+                                className="btn-primary"
+                                style={{
+                                    width: "auto",
+                                    padding: "5px 14px",
+                                    fontSize: 13,
+                                    opacity: tab === "parking" ? 1 : 0.5,
+                                }}
+                                onClick={() => setTab("parking")}
+                            >
+                                My parking
+                            </button>
                         </div>
+
+                        {tab === "book" ? (
+                            <>
+                                <OwnerRecommendation
+                                    onBook={handleBook}
+                                    disabled={busy || !!myBooking}
+                                />
+                                <h3 className="owner-panel-title">
+                                    10 nearest to entry
+                                </h3>
+                                <div className="owner-panel-body">
+                                    <table
+                                        style={{
+                                            width: "100%",
+                                            borderCollapse: "collapse",
+                                            fontSize: 14,
+                                        }}
+                                    >
+                                        <thead>
+                                            <tr>
+                                                <th
+                                                    style={{
+                                                        padding: 6,
+                                                        textAlign: "left",
+                                                    }}
+                                                >
+                                                    #
+                                                </th>
+                                                <th
+                                                    style={{
+                                                        padding: 6,
+                                                        textAlign: "left",
+                                                    }}
+                                                >
+                                                    Slot
+                                                </th>
+                                                <th
+                                                    style={{
+                                                        padding: 6,
+                                                        textAlign: "left",
+                                                    }}
+                                                >
+                                                    Zone
+                                                </th>
+                                                <th
+                                                    style={{
+                                                        padding: 6,
+                                                        textAlign: "left",
+                                                    }}
+                                                >
+                                                    Type
+                                                </th>
+                                                <th
+                                                    style={{
+                                                        padding: 6,
+                                                        textAlign: "left",
+                                                    }}
+                                                >
+                                                    Distance
+                                                </th>
+                                                <th style={{ padding: 6 }}></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {freeSlots.length === 0 && (
+                                                <tr>
+                                                    <td
+                                                        colSpan="6"
+                                                        style={{ padding: 8 }}
+                                                    >
+                                                        No free slots for your
+                                                        vehicle type right now.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {freeSlots.map((s, i) => (
+                                                <tr
+                                                    key={s._id}
+                                                    style={{
+                                                        borderTop:
+                                                            "1px solid #e5e7eb",
+                                                    }}
+                                                >
+                                                    <td style={{ padding: 6 }}>
+                                                        {i + 1}
+                                                    </td>
+                                                    <td style={{ padding: 6 }}>
+                                                        <strong>
+                                                            {s.slotNumber}
+                                                        </strong>
+                                                    </td>
+                                                    <td style={{ padding: 6 }}>
+                                                        {s.zone}
+                                                    </td>
+                                                    <td style={{ padding: 6 }}>
+                                                        {s.type}
+                                                    </td>
+                                                    <td style={{ padding: 6 }}>
+                                                        {s.distanceFromEntry} m
+                                                    </td>
+                                                    <td
+                                                        style={{
+                                                            padding: 6,
+                                                            textAlign: "right",
+                                                        }}
+                                                    >
+                                                        <button
+                                                            className="book-btn"
+                                                            disabled={
+                                                                busy ||
+                                                                !!myBooking
+                                                            }
+                                                            onClick={() =>
+                                                                handleBook(
+                                                                    s._id,
+                                                                )
+                                                            }
+                                                            title={
+                                                                myBooking
+                                                                    ? "You already have a booking"
+                                                                    : "Book this slot"
+                                                            }
+                                                        >
+                                                            Book
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        ) : (
+                            <MyParking />
+                        )}
                     </section>
                 </div>
             )}
